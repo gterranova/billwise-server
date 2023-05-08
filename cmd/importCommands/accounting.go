@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -189,7 +190,7 @@ func ImportAccountingDocument(db *gorm.DB, jsonBytes []byte) (err error) {
 			case models.HourlyRate:
 				duration, err := ParseDuration(k.HoursBilled)
 				if err != nil {
-					activity.HoursBilled = datatypes.NewTime(0, int(duration.Minutes()), 0, 0)
+					activity.SecondsBilled = uint(math.Trunc(duration.Seconds()))
 				}
 			case models.TaxableExpense, models.TaxExemptExpense, models.ContributoUnificato:
 				// other types are not exported anyway

@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -35,14 +34,13 @@ type Activity struct {
 	Description         string               `json:"description"`
 	PaymentType         *PaymentType         `json:"payment_type"`
 	PaymentAmount       *float64             `json:"payment_amount"`
-	HoursBilled         datatypes.Time       `json:"hours_billed"`
+	SecondsBilled       uint                 `json:"seconds_billed"`
 	Date                datatypes.Date       `json:"date"`
 
 	// Calculated fields
 	ReferenceDocumentID *uuid.UUID          `gorm:"constraint:OnDelete:SET NULL;" json:"referenceDocumentId"`
 	ReferenceDocument   *AccountingDocument `gorm:"foreignKey:ReferenceDocumentID;constraint:OnDelete:SET NULL;" json:"reference_document"`
 	Status              ActivityStatus      `json:"status"`
-	SecondsBilled       uint                `json:"seconds_billed"`
 	CalculatedAmount    float64             `json:"calculated_amount"`
 }
 
@@ -71,7 +69,7 @@ func GetActivityById(db *gorm.DB, id uuid.UUID) *Activity {
 }
 
 func (activity *Activity) BeforeCreate(tx *gorm.DB) (err error) {
-	tx.Statement.Select("UserID", "TaskID", "Description", "PaymentType", "PaymentAmount", "HoursBilled", "Date", "Status", "SecondsBilled", "CalculatedAmount")
+	tx.Statement.Select("UserID", "TaskID", "Description", "PaymentType", "PaymentAmount", "Date", "Status", "SecondsBilled", "CalculatedAmount")
 	return nil
 }
 
@@ -126,7 +124,7 @@ func (activity *Activity) UpdateCalculatedFields(tx *gorm.DB, activityTask *Task
 	if activity.PaymentType != nil {
 		switch *activity.PaymentType {
 		case HourlyRate:
-			seconds = uint(time.Duration(activity.HoursBilled).Seconds())
+			seconds = activity.SecondsBilled
 			if taskHourlyRate > 0 {
 				amount = taskHourlyRate * (float64(seconds) / 3600)
 			} else {
@@ -166,7 +164,7 @@ func (activity *Activity) UpdateCalculatedFields(tx *gorm.DB, activityTask *Task
 }
 
 func (activity *Activity) BeforeUpdate(tx *gorm.DB) (err error) {
-	tx.Statement.Select("UserID", "TaskID", "Description", "PaymentType", "PaymentAmount", "HoursBilled", "Date") //"Status", "SecondsBilled", "CalculatedAmount"
+	tx.Statement.Select("UserID", "TaskID", "Description", "PaymentType", "PaymentAmount", "Date", "SecondsBilled") //"Status", "SecondsBilled", "CalculatedAmount"
 	return nil
 }
 
@@ -177,9 +175,9 @@ func (activity *Activity) Update(tx *gorm.DB) (err error) {
 
 func (activity *Activity) AfterSave(tx *gorm.DB) (err error) {
 	// update associated task
-	return tx.Session(&gorm.Session{NewDB: true, SkipHooks: true}).Set("userId", util.SessionUserID(tx).String()).Transaction(func(tx *gorm.DB) (err error) {
-		return UpdateUserStats(tx, []uuid.UUID{activity.TaskID})
-	})
+	//return tx.Session(&gorm.Session{NewDB: true, SkipHooks: true}).Set("userId", util.SessionUserID(tx).String()).Transaction(func(tx *gorm.DB) (err error) {
+	return UpdateUserStats(tx, []uuid.UUID{activity.TaskID})
+	//})
 }
 
 func (activity *Activity) BeforeDelete(tx *gorm.DB) (err error) {

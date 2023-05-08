@@ -38,7 +38,9 @@ func UpdateUserStats(tx *gorm.DB, tasksToUpdate []uuid.UUID) (err error) {
 	accountingMap := make(map[uuid.UUID]*AccountingData)
 	for _, activity := range activitiesToUpdate {
 		activityTask := tasksMap[activity.TaskID].t
-		activity.UpdateCalculatedFields(tx, activityTask, false)
+		if err = activity.UpdateCalculatedFields(tx, activityTask, false); err != nil {
+			return
+		}
 
 		if activity.ReferenceDocumentID != nil {
 			accountingDocumentID := activity.ReferenceDocumentID
@@ -72,8 +74,10 @@ func UpdateUserStats(tx *gorm.DB, tasksToUpdate []uuid.UUID) (err error) {
 	// accounting document
 	for accountingDocumentID, accountingData := range accountingMap {
 		var discount float64 = 1
-		if accountingMap[accountingDocumentID].totalActivitiesSeconds > 0 {
+		if accountingData.totalActivitiesAmounts > 0 {
 			discount = *accountingMap[accountingDocumentID].d.DocumentAmount / accountingData.totalActivitiesAmounts
+		}
+		if accountingMap[accountingDocumentID].totalActivitiesSeconds > 0 {
 			for userId := range accountingMap[accountingDocumentID].stats {
 				accountingMap[accountingDocumentID].stats[userId].UserPerc = float64(accountingMap[accountingDocumentID].stats[userId].TotalUserSeconds) / float64(accountingData.totalActivitiesSeconds)
 				accountingMap[accountingDocumentID].stats[userId].TotalUserAmounts *= *accountingMap[accountingDocumentID].d.DocumentAmount * accountingMap[accountingDocumentID].stats[userId].UserPerc
@@ -81,7 +85,7 @@ func UpdateUserStats(tx *gorm.DB, tasksToUpdate []uuid.UUID) (err error) {
 		}
 		accountingMap[accountingDocumentID].totalActivitiesAmounts *= discount
 
-		tx.Session(&gorm.Session{NewDB: true}).Set("userId", util.SessionUserID(tx).String()).Transaction(func(tx *gorm.DB) (err error) {
+		if err = tx.Session(&gorm.Session{NewDB: true}).Set("userId", util.SessionUserID(tx).String()).Transaction(func(tx *gorm.DB) (err error) {
 			if err = tx.Session(&gorm.Session{NewDB: true}).Set("userId", util.SessionUserID(tx).String()).
 				Exec(`UPDATE "accounting_documents" SET "total_activities_seconds"=?,"total_activities_amounts"=? WHERE "id" = ?`,
 					accountingData.totalActivitiesSeconds,
@@ -94,7 +98,9 @@ func UpdateUserStats(tx *gorm.DB, tasksToUpdate []uuid.UUID) (err error) {
 				userStats = append(userStats, value)
 			}
 			return ReplaceAccountingUserStats(tx, accountingDocumentID, userStats)
-		})
+		}); err != nil {
+			return
+		}
 	}
 
 	// iterate again through the activities and calculate the amount
@@ -103,7 +109,9 @@ func UpdateUserStats(tx *gorm.DB, tasksToUpdate []uuid.UUID) (err error) {
 	for _, activity := range activitiesToUpdate {
 		taskID := activity.TaskID
 		// recalc activity.CalculatedAmount
-		activity.UpdateCalculatedFields(tx, tasksMap[taskID].t, false)
+		if err = activity.UpdateCalculatedFields(tx, tasksMap[taskID].t, false); err != nil {
+			return
+		}
 		// save the activity's calculated fields
 		if err = tx.Session(&gorm.Session{NewDB: true}).Set("userId", util.SessionUserID(tx).String()).
 			Exec(`UPDATE "activities" SET "reference_document_id"=?,"status"=?,"seconds_billed"=?,"calculated_amount"=? WHERE "id" = ?`,

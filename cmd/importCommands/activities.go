@@ -126,7 +126,7 @@ func ImportActivities(db *gorm.DB, jsonBytes []byte) (err error) {
 				activity.PaymentAmount = &amount
 			case models.HourlyRate:
 				minutes, _ := strconv.Atoi(strings.Split(k.DurataInMinuti, ",")[0])
-				activity.HoursBilled = datatypes.NewTime(0, minutes, 0, 0)
+				activity.SecondsBilled = uint(minutes * 60)
 			case models.TaxableExpense, models.TaxExemptExpense, models.ContributoUnificato:
 				amount, _ := strconv.ParseFloat(strings.Replace(strings.ReplaceAll(k.Spese, ".", ""), ",", ".", 1), 64)
 				activity.PaymentAmount = &amount
