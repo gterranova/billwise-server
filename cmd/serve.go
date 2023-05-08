@@ -4,6 +4,8 @@ Copyright © 2023 Gianpaolo Terranova <gianpaoloterranova@gmail.com>
 package cmd
 
 import (
+	"fmt"
+
 	"it.terra9/billwise-server/database"
 	"it.terra9/billwise-server/routes"
 
@@ -41,7 +43,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		startServer(viper.GetString("API_SERVER_ADDR"))
+		startServer(fmt.Sprintf("%v:%v", viper.GetString("API_SERVER_HOST"), viper.GetInt("API_SERVER_PORT")))
 	},
 }
 
@@ -56,6 +58,6 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	serveCmd.Flags().Int("port", 8000, "Port to run Application server on")
-	viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
+	serveCmd.Flags().Int("port", 4300, "Port to run Application server on")
+	viper.BindPFlag("API_SERVER_PORT", serveCmd.Flags().Lookup("port"))
 }

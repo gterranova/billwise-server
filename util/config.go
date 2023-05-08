@@ -18,7 +18,8 @@ func InitEnvConfigs() {
 }
 
 type config struct {
-	ApiServerAddr string `mapstructure:"API_SERVER_ADDR"`
+	ApiServerHost string `mapstructure:"API_SERVER_HOST"`
+	ApiServerPort string `mapstructure:"API_SERVER_PORT"`
 	ApiSecret     string `mapstructure:"API_SECRET"`
 	DBHost        string `mapstructure:"DB_HOST"`
 	DBDriver      string `mapstructure:"DB_DRIVER"`

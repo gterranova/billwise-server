@@ -10,7 +10,7 @@ services:
     env_file:    
       - .env
     ports:
-      - "8000:8000"
+      - "${API_SERVER_PORT}:${API_SERVER_PORT}"
     depends_on:
       - fullstack-postgres          # Uncomment this when using postgres.
     networks:

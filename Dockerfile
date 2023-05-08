@@ -33,8 +33,5 @@ RUN mkdir uploads
 
 #RUN ./billwise-server permissions admin edit_tasks edit_activities edit_accounting edit_invoices
 
-# This container exposes port 8080 to the outside world
-EXPOSE 8000
-
 # Run the binary program produced by `go install`
 CMD ["/app/billwise-server","serve"]
