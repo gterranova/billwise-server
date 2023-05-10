@@ -74,7 +74,7 @@ func GetInvoice(ctx *fiber.Ctx) error {
 		Joins("left join accounting_document_user_stats on accounting_document_user_stats.accounting_document_id = activities.reference_document_id and accounting_document_user_stats.user_id = ?", userId).
 		Where("invoice_id = ? and activities.user_id = ?", invoice.ID, userId).
 		Preload("ReferenceDocument").
-		Preload("Task").Find(&invoice.Activities).Error; err != nil {
+		Preload("Task").Order("activities.date desc").Find(&invoice.Activities).Error; err != nil {
 		return fiber.NewError(fiber.StatusNotFound)
 	}
 	return ctx.JSON(invoice)
