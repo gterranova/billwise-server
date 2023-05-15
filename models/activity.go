@@ -175,9 +175,9 @@ func (activity *Activity) Update(tx *gorm.DB) (err error) {
 
 func (activity *Activity) AfterSave(tx *gorm.DB) (err error) {
 	// update associated task
-	//return tx.Session(&gorm.Session{NewDB: true, SkipHooks: true}).Set("userId", util.SessionUserID(tx).String()).Transaction(func(tx *gorm.DB) (err error) {
-	return UpdateUserStats(tx, []uuid.UUID{activity.TaskID})
-	//})
+	return tx.Session(&gorm.Session{NewDB: true, SkipHooks: true}).Set("userId", util.SessionUserID(tx).String()).Transaction(func(tx *gorm.DB) (err error) {
+		return UpdateUserStats(tx, []uuid.UUID{activity.TaskID})
+	})
 }
 
 func (activity *Activity) BeforeDelete(tx *gorm.DB) (err error) {
