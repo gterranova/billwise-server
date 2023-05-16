@@ -22,10 +22,6 @@ type Invoice struct {
 	DocumentNumber int               `json:"document_number"`
 	DocumentAmount *float64          `json:"document_amount"`
 	Activities     []models.Activity `gorm:"constraint:OnDelete:SET NULL;" json:"activities"`
-
-	HoursBilled string  `json:"hours_billed"`
-	UserBilled  string  `json:"user_billed"`
-	UserPerc    float64 `json:"user_perc"`
 }
 
 func (d *Invoice) Count(db *gorm.DB) int64 {
