@@ -67,6 +67,7 @@ func UpdateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 	user.ID = userId
+	user.RoleId = user.Role.ID
 	result := database.DB.Model(&user).Updates(user)
 	if result.Error != nil {
 		return err

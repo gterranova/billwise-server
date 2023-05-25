@@ -72,7 +72,7 @@ func ImportTasks(db *gorm.DB, jsonBytes []byte) (err error) {
 
 			fmt.Printf("[%v/%v] Importing %v ", i+1, taskCount, task.Name)
 
-			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).Where(models.Task{Code: task.Code}).Assign(&task).FirstOrCreate(&task); result.Error != nil {
+			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).Where(models.Task{Code: task.Code}).Or(models.Task{Name: task.Name}).Assign(&task).FirstOrCreate(&task); result.Error != nil {
 				fmt.Println("--> FAILED")
 				return result.Error
 			}

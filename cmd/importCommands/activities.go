@@ -135,7 +135,13 @@ func ImportActivities(db *gorm.DB, jsonBytes []byte) (err error) {
 			activity.Description = k.Voci
 
 			fmt.Printf("[%v/%v] Importing %v %v %v", i+1, activityCount, k.Data, task.Name, activity.Description)
-			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).Where(&activity).Assign(&activity).FirstOrCreate(&activity); result.Error != nil {
+			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).Where(&models.Activity{
+				Date:        activity.Date,
+				TaskID:      activity.TaskID,
+				UserID:      activity.UserID,
+				Description: activity.Description,
+				PaymentType: activity.PaymentType,
+			}).Assign(&activity).FirstOrCreate(&activity); result.Error != nil {
 				fmt.Printf("--> FAILED\n")
 				return result.Error
 			}
