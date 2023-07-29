@@ -28,19 +28,13 @@ import (
 )
 
 type DocumentList []struct {
-	Intestatario      string `json:"Intestatario,omitempty"`
-	Tipo              string `json:"Tipo,omitempty"`
-	NomePratica       string `json:"Nome pratica,omitempty"`
-	Data              string `json:"Data,omitempty"`
-	Numero            string `json:"Numero,omitempty"`
-	TotaleNetto       string `json:"Totale Netto,omitempty"`
-	InviaPer          string `json:"Invia per,omitempty"`
-	Incasso           string `json:"Incasso,omitempty"`
-	Nota              string `json:"Nota,omitempty"`
-	StatoIncasso      string `json:"Stato incasso,omitempty"`
-	StatoFatturazione string `json:"Stato Fatturazione,omitempty"`
-	DataScadenza      string `json:"Data scadenza,omitempty"`
-	TotaleImponibile  string `json:"Totale Imponibile,omitempty"`
+	Tipo         string `json:"Tipo,omitempty"`
+	Data         string `json:"Data emissione,omitempty"`
+	Stato        string `json:"Stato,omitempty"`
+	Totale       string `json:"Totale,omitempty"`
+	Destinatario string `json:"Destinatario,omitempty"`
+	NomePratica  string `json:"Fascicolo,omitempty"`
+	Numero       string `json:"Numero,omitempty"`
 }
 
 type ParcellazioneKleos struct {
@@ -72,7 +66,7 @@ func ImportAccountingDocumentList(db *gorm.DB, jsonBytes []byte) (err error) {
 
 			accountingDocument := models.AccountingDocument{}
 			switch k.Tipo {
-			case "Fattura":
+			case "Parcella":
 				accountingDocument.DocumentType = models.InvoiceType
 			case "Proforma":
 				accountingDocument.DocumentType = models.ProformaType
@@ -88,28 +82,33 @@ func ImportAccountingDocumentList(db *gorm.DB, jsonBytes []byte) (err error) {
 			if number, err := strconv.ParseInt(k.Numero, 10, 32); err == nil {
 				accountingDocument.DocumentNumber = int(number)
 			}
+			accountingDocument.Status = k.Stato
 
-			if k.StatoIncasso != "-" {
-				accountingDocument.Status = k.StatoIncasso
-			} else {
-				accountingDocument.Status = k.StatoFatturazione
-			}
-			imponibile := float64(0)
-			if imponibile, err = strconv.ParseFloat(strings.Replace(strings.ReplaceAll(k.TotaleImponibile, ".", ""), ",", ".", 1), 64); err == nil {
-				accountingDocument.DocumentAmount = &imponibile
-			}
+			//imponibile := float64(0)
+			//if imponibile, err = strconv.ParseFloat(strings.Replace(strings.ReplaceAll(k.Totale, ".", ""), ",", ".", 1), 64); err == nil {
+			//	accountingDocument.DocumentAmount = &imponibile
+			//}
+
 			// pratica
 			var task models.Task
 			if len(k.NomePratica) == 0 {
 				continue
 			}
-			if err := tx.Where(&models.Task{Name: k.NomePratica}).First(&task).Error; err != nil {
+			codPratica := strings.Split(k.NomePratica, " ")[0]
+			if len(codPratica) == 0 {
+				continue
+			}
+			if err := tx.Where(&models.Task{Code: codPratica}).First(&task).Error; err != nil {
 				//return err
 				continue
 			}
+
 			accountingDocument.Task = task
 			fmt.Printf("[%v/%v] Importing %v %v %v %v", i+1, documentCount, k.Data, task.Name, k.Tipo, k.Numero)
-			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).Where(&accountingDocument).Assign(&accountingDocument).FirstOrCreate(&accountingDocument); result.Error != nil {
+			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).
+				Where(&models.AccountingDocument{DocumentType: accountingDocument.DocumentType, DocumentNumber: accountingDocument.DocumentNumber}).
+				Assign(models.AccountingDocument{Status: accountingDocument.Status, Date: accountingDocument.Date}).
+				FirstOrCreate(&accountingDocument); result.Error != nil {
 				fmt.Printf("--> FAILED\n")
 				return result.Error
 			}

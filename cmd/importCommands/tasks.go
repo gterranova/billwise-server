@@ -52,7 +52,7 @@ func ImportTasks(db *gorm.DB, jsonBytes []byte) (err error) {
 	json.Unmarshal(jsonBytes, &kleosTasks)
 	uid := (&uuid.UUID{}).String()
 
-	return db.Transaction(func(tx *gorm.DB) error {
+	return db.Session(&gorm.Session{NewDB: true, SkipHooks: true, DisableNestedTransaction: true}).Set("userId", uid).Transaction(func(tx *gorm.DB) error {
 		taskCount := len(kleosTasks)
 		for i, t := range kleosTasks {
 			if len(t.DataDiArchiviazione) > 0 {
@@ -72,7 +72,21 @@ func ImportTasks(db *gorm.DB, jsonBytes []byte) (err error) {
 
 			fmt.Printf("[%v/%v] Importing %v ", i+1, taskCount, task.Name)
 
-			if result := tx.Session(&gorm.Session{SkipHooks: true}).Set("userId", uid).Where(models.Task{Code: task.Code}).Or(models.Task{Name: task.Name}).Assign(&task).FirstOrCreate(&task); result.Error != nil {
+			if err := tx.Where(&models.Task{Code: task.Code}).First(&task).Error; err == nil {
+				if err = task.Update(tx); err != nil {
+					fmt.Println("--> FAILED")
+					return err
+				}
+				fmt.Println("--> OK")
+				continue
+			}
+
+			result := tx.
+				Where(models.Task{Name: task.Name, Description: task.Description}).
+				Assign(&task).
+				FirstOrCreate(&task)
+
+			if result.Error != nil {
 				fmt.Println("--> FAILED")
 				return result.Error
 			}
