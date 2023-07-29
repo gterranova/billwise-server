@@ -55,13 +55,16 @@ func (activity *Activity) Take(db *gorm.DB, limit int, offset int) interface{} {
 	if limit > 0 {
 		db = db.Offset(offset).Limit(limit)
 	}
-	db.Preload("User").Preload("Task").Preload("AccountingDocuments").Order("activities.date desc").Find(&activities)
+	db.Preload("User").Preload("Task").Preload("AccountingDocuments").
+		Preload("ReferenceDocument").
+		Order("activities.date desc").Find(&activities)
 	return activities
 }
 
 func GetActivityById(db *gorm.DB, id uuid.UUID) *Activity {
 	activity := Activity{}
 	if err := db.Preload("User").Preload("Task").Preload("AccountingDocuments").
+		Preload("ReferenceDocument").
 		Where("activities.id = ?", id).First(&activity).Error; err != nil {
 		return nil
 	}
