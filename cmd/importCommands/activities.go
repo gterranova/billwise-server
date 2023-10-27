@@ -63,7 +63,12 @@ func ImportActivities(db *gorm.DB, jsonBytes []byte) (err error) {
 			// data
 			date, err := time.Parse("02/01/2006", k.Data)
 			if err != nil {
-				return err
+				in, err := strconv.ParseFloat(k.Data, 32)
+				if err != nil {
+					return err
+				}
+				excelEpoch := time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
+				date = excelEpoch.Add(time.Duration(in * float64(24*time.Hour)))
 			}
 			activity.Date = datatypes.Date(date)
 

@@ -74,9 +74,17 @@ func ImportAccountingDocumentList(db *gorm.DB, jsonBytes []byte) (err error) {
 				continue
 			}
 			// data
-			date, err := time.Parse("02/01/2006", k.Data[:10])
+			if len(k.Data) > 10 {
+				k.Data = k.Data[:10]
+			}
+			date, err := time.Parse("02/01/2006", k.Data)
 			if err != nil {
-				return err
+				in, err := strconv.ParseFloat(k.Data, 32)
+				if err != nil {
+					return err
+				}
+				excelEpoch := time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
+				date = excelEpoch.Add(time.Duration(in * float64(24*time.Hour)))
 			}
 			accountingDocument.Date = datatypes.Date(date)
 			if number, err := strconv.ParseInt(k.Numero, 10, 32); err == nil {
@@ -129,7 +137,12 @@ func ImportAccountingDocument(db *gorm.DB, jsonBytes []byte) (err error) {
 	fmt.Printf("[*] %v n. %v of %v\n", kleosDocument.DocumentType, kleosDocument.DocumentNumber, kleosDocument.Date)
 	date, err := time.Parse("02/01/2006", kleosDocument.Date)
 	if err != nil {
-		return err
+		in, err := strconv.ParseFloat(kleosDocument.Date, 32)
+		if err != nil {
+			return err
+		}
+		excelEpoch := time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
+		date = excelEpoch.Add(time.Duration(in * float64(24*time.Hour)))
 	}
 
 	var documentType models.DocumentType
@@ -199,7 +212,12 @@ func ImportAccountingDocument(db *gorm.DB, jsonBytes []byte) (err error) {
 			// data
 			date, err := time.Parse("02/01/2006", k.Date)
 			if err != nil {
-				return err
+				in, err := strconv.ParseFloat(k.Date, 32)
+				if err != nil {
+					return err
+				}
+				excelEpoch := time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
+				date = excelEpoch.Add(time.Duration(in * float64(24*time.Hour)))
 			}
 			activity.Date = datatypes.Date(date)
 
